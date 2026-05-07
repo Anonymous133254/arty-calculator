@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Artillery Calculator</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 30px;
+      background: #1e1e1e;
+      color: white;
+    }
+
+    input, select, button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Artillery Calculator</h1>
+
+<select id="weapon">
+  <option value="104">cannon</option>
+  <option value="223">howitzer</option>
+  <option value="590">1/4</option>
+  <option value="374">2/4</option>
+  <option value="250">3/4</option>
+  <option value="181">4/4</option>
+</select>
+
+<br>
+
+<input id="x" placeholder="Distance">
+<input id="y" placeholder="Height">
+
+<br>
+
+<button onclick="calculate()">Calculate</button>
+
+<div id="result"></div>
+
+<script>
+function calculate() {
+
+  let g = Number(document.getElementById("weapon").value);
+  let x = Number(document.getElementById("x").value);
+  let y = Number(document.getElementById("y").value);
+
+  let v = 773;
+
+  let A = (g * x * x) / (2 * v * v);
+
+  let D = x * x - 4 * A * (A + y);
+
+  if (D < 0) {
+    document.getElementById("result").innerHTML = "INVALID";
+    return;
+  }
+
+  let low =
+    Math.atan((x - Math.sqrt(D)) / (2 * A)) * 180 / Math.PI;
+
+  let high =
+    Math.atan((x + Math.sqrt(D)) / (2 * A)) * 180 / Math.PI;
+
+  low = low.toFixed(1);
+  high = high.toFixed(1);
+
+  document.getElementById("result").innerHTML =
+    "Direct: " + low + "°<br>Indirect: " + high + "°";
+}
+</script>
+
+</body>
+</html>
