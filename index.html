@@ -5,7 +5,7 @@
   <style>
     body {
       font-family: Arial;
-      padding: 30px;
+      padding: 20px;
       background: #1e1e1e;
       color: white;
     }
@@ -16,9 +16,19 @@
       font-size: 16px;
     }
 
+    button {
+      cursor: pointer;
+    }
+
     #result {
+      margin-top: 10px;
+      font-size: 20px;
+    }
+
+    canvas {
       margin-top: 20px;
-      font-size: 22px;
+      background: #111;
+      border: 1px solid #444;
     }
   </style>
 </head>
@@ -26,13 +36,13 @@
 
 <h1>Artillery Calculator</h1>
 
-<select id="weapon">
+<select id="weapon" onchange="updateButtons()">
   <option value="104">cannon</option>
   <option value="223">howitzer</option>
-  <option value="590">1/4 mortar</option>
-  <option value="374">2/4 mortar</option>
-  <option value="250">3/4 mortar</option>
-  <option value="181">4/4 mortar</option>
+  <option value="590">mortar 1/4</option>
+  <option value="374">mortar 2/4</option>
+  <option value="250">mortar 3/4</option>
+  <option value="181">mortar 4/4</option>
 </select>
 
 <br>
@@ -42,40 +52,119 @@
 
 <br>
 
-<button onclick="calculate()">Calculate</button>
+<button onclick="calcDirect()">Calculate Direct</button>
+<button id="indirectBtn" onclick="calcIndirect()">Calculate Indirect</button>
 
 <div id="result"></div>
 
-<script>
-function calculate() {
+<canvas id="graph" width="700" height="350"></canvas>
 
+<script>
+
+function updateButtons() {
+  let g = Number(document.getElementById("weapon").value);
+
+  document.getElementById("indirectBtn").style.display =
+    (g === 104 || g === 223) ? "none" : "inline-block";
+}
+
+function getValues() {
   let g = Number(document.getElementById("weapon").value);
   let x = Number(document.getElementById("x").value);
   let y = Number(document.getElementById("y").value);
 
+  if (!g || !x || y === "" || x < 1) return null;
+
+  return { g, x, y: Number(y) };
+}
+
+// 🔥 ONLY CHANGE IS HERE: smaller, cleaner scaling
+function drawPath(angleDeg) {
+
+  let canvas = document.getElementById("graph");
+  let ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  let angle = angleDeg * Math.PI / 180;
+
   let v = 773;
+  let g = 9.81;
 
-  let A = (g * x * x) / (2 * v * v);
+  let vx = v * Math.cos(angle);
+  let vy = v * Math.sin(angle);
 
-  let D = x * x - 4 * A * (A + y);
+  // ↓↓↓ smaller scale = more compact graph ↓↓↓
+  let scale = 0.01;
 
-  if (D < 0) {
-    document.getElementById("result").innerHTML = "INVALID";
-    return;
+  let started = false;
+
+  ctx.beginPath();
+
+  for (let t = 0; t < 1000; t += 0.1) {
+
+    let x = vx * t;
+    let y = vy * t - 0.5 * g * t * t;
+
+    if (y < 0 && t > 0) break;
+
+    let px = x * scale;
+    let py = canvas.height - (y * scale);
+
+    if (!started) {
+      ctx.moveTo(px, py);
+      started = true;
+    } else {
+      ctx.lineTo(px, py);
+    }
   }
 
-  let low =
-    Math.atan((x - Math.sqrt(D)) / (2 * A)) * 180 / Math.PI;
+  ctx.strokeStyle = "lime";
+  ctx.stroke();
+}
 
-  let high =
-    Math.atan((x + Math.sqrt(D)) / (2 * A)) * 180 / Math.PI;
+function calcDirect() {
 
-  low = low.toFixed(1);
-  high = high.toFixed(1);
+  let v = getValues();
+  if (!v) return document.getElementById("result").innerHTML = "INVALID";
+
+  let { g, x, y } = v;
+
+  let A = (g * x * x) / (2 * 773 * 773);
+  let D = x * x - 4 * A * (A + y);
+
+  if (D < 0) return document.getElementById("result").innerHTML = "INVALID";
+
+  let angle = Math.atan((x - Math.sqrt(D)) / (2 * A)) * 180 / Math.PI;
 
   document.getElementById("result").innerHTML =
-    "Direct: " + low + "°<br>Indirect: " + high + "°";
+    "Direct: " + angle.toFixed(1) + "°";
+
+  drawPath(angle);
 }
+
+function calcIndirect() {
+
+  let v = getValues();
+  if (!v) return document.getElementById("result").innerHTML = "INVALID";
+
+  let { g, x, y } = v;
+
+  let A = (g * x * x) / (2 * 773 * 773);
+  let D = x * x - 4 * A * (A + y);
+
+  if (D < 0) return document.getElementById("result").innerHTML = "INVALID";
+
+  let angle = Math.atan((x + Math.sqrt(D)) / (2 * A)) * 180 / Math.PI;
+
+  document.getElementById("result").innerHTML =
+    "Indirect: " + angle.toFixed(1) + "°";
+
+  drawPath(angle);
+}
+
+updateButtons();
+
 </script>
 
 </body>
